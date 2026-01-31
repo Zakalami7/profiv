@@ -1,0 +1,57 @@
+
+{
+  "version": 2,
+  "name": "profiV",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "GEMINI_API_KEY": "@gemini_api_key",
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "GEMINI_TEMPERATURE": "0.7",
+    "GEMINI_MAX_TOKENS": "4096",
+    "REDIS_URL": "@redis_url",
+    "REDIS_ENABLED": "true",
+    "MONGODB_URI": "@mongodb_uri",
+    "MONGODB_ENABLED": "true",
+    "MONITORING_ENABLED": "true",
+    "LOG_LEVEL": "info",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "STRIPE_PUBLIC_KEY": "@stripe_public_key",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  },
+  "build": {
+    "env": {
+      "GEMINI_API_KEY": "@gemini_api_key",
+      "REDIS_URL": "@redis_url",
+      "MONGODB_URI": "@mongodb_uri",
+      "SUPABASE_URL": "@supabase_url",
+      "SUPABASE_ANON_KEY": "@supabase_anon_key",
+      "STRIPE_SECRET_KEY": "@stripe_secret_key"
+    }
+  },
+  "functions": {
+    "backend/server.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}

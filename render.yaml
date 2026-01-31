@@ -1,0 +1,97 @@
+
+services:
+  # Service Backend (Node.js/Express)
+  - type: web
+    name: profiV-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_TEMPERATURE
+        value: 0.7
+      - key: GEMINI_MAX_TOKENS
+        value: 4096
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: profiV-redis
+          property: connectionString
+      - key: REDIS_ENABLED
+        value: true
+      - key: MONGODB_URI
+        fromService:
+          type: pserv
+          name: profiV-mongodb
+          property: connectionString
+      - key: MONGODB_ENABLED
+        value: true
+      - key: MONITORING_ENABLED
+        value: true
+      - key: LOG_LEVEL
+        value: info
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+    healthCheckPath: /health
+
+  # Service Frontend (Vite/React)
+  - type: web
+    name: profiV-frontend
+    env: static
+    plan: free
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: profiV-backend
+          property: url
+          property: path
+          value: /api
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://profiV-backend.onrender.com/:splat
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # Service Redis (Cache)
+  - type: redis
+    name: profiV-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  # Service MongoDB (Base de données)
+  - type: pserv
+    name: profiV-mongodb
+    plan: free
+    env: docker
+    disk:
+      name: data
+      mountPath: /data/db
+      sizeGB: 10

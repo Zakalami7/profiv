@@ -1,0 +1,166 @@
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Installation des dépendances
+      run: npm ci
+
+    - name: Linting
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Type checking
+      run: npm run type-check
+      continue-on-error: true
+
+    - name: Tests unitaires
+      run: npm test
+      env:
+        CI: true
+      continue-on-error: true
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Installation des dépendances
+      run: npm ci
+
+    - name: Build de l'application
+      run: npm run build
+      env:
+        VITE_API_URL: ${{ secrets.API_URL }}
+        VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+    - name: Upload des artefacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+
+    - name: Download des artefacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+        path: dist
+
+    - name: Déploiement sur Vercel (Staging)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prebuilt'
+        working-directory: ./
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+
+    - name: Download des artefacts
+      uses: actions/download-artifact@3
+      with:
+        name: build-artifacts
+        path: dist
+
+    - name: Déploiement sur Vercel (Production)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod --prebuilt'
+        working-directory: ./
+
+    - name: Notification Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Déploiement en production terminé'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build et Push Backend
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: profiv/backend:latest
+        cache-from: type=registry,ref=profiv/backend:buildcache
+        cache-to: type=registry,ref=profiv/backend:buildcache,mode=max
+
+    - name: Build et Push Frontend
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: true
+        tags: profiv/frontend:latest
+        cache-from: type=registry,ref=profiv/frontend:buildcache
+        cache-to: type=registry,ref=profiv/frontend:buildcache,mode=max

@@ -1,0 +1,50 @@
+
+{
+  "name": "ProfiV - Excellence Éducative",
+  "short_name": "ProfiV",
+  "description": "Plateforme éducative SaaS pour les professeurs et élèves du Maroc",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "fr",
+  "dir": "ltr",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Générer Exercices",
+      "short_name": "Exercices",
+      "description": "Générer de nouveaux exercices",
+      "url": "/?action=generate",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Quiz Diagnostic",
+      "short_name": "Quiz",
+      "description": "Passer un quiz diagnostic",
+      "url": "/?action=quiz",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Historique",
+      "short_name": "Historique",
+      "description": "Voir l\'historique des exercices",
+      "url": "/?action=history",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
