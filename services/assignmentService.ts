@@ -1,5 +1,4 @@
-
-import { supabase } from './supabaseClient';
+import { from } from '../database/query-builder';
 import type { Exercise, ExerciseOptions } from '../types';
 
 // CONFORMITÉ CNDP (Loi 09-08) :
@@ -11,26 +10,23 @@ export const createAssignment = async (
     options: ExerciseOptions, 
     userId: string
 ): Promise<string | null> => {
-    if (!supabase) return null;
-
     // Générer un code unique court (ex: PHY-882)
     const prefix = options.subject.substring(0, 3).toUpperCase();
     const randomNum = Math.floor(100 + Math.random() * 900);
     const code = `${prefix}-${randomNum}`;
 
     try {
-        const { error } = await supabase
-            .from('assignments')
-            .insert({
-                code: code,
-                content: exercises,
-                options: options,
-                // Supabase gère created_at, nous gérerons l'expiration à la lecture
-            });
+        const { error } = await from('assignments').insert({
+            code: code,
+            content: exercises,
+            options: options,
+            created_by: userId
+        });
 
         if (error) {
-            console.error("Erreur Supabase (Création Devoir):", error.message);
-            if (error.code === '23505') {
+            console.error("Erreur création devoir:", error.message);
+            // If duplicate code, retry
+            if (error.message.includes('UNIQUE constraint failed')) {
                 return createAssignment(exercises, options, userId);
             }
             return null;
@@ -44,11 +40,8 @@ export const createAssignment = async (
 };
 
 export const getAssignmentByCode = async (code: string): Promise<{ exercises: Exercise[], options: ExerciseOptions, isQuiz: boolean } | null> => {
-    if (!supabase) return null;
-
     try {
-        const { data, error } = await supabase
-            .from('assignments')
+        const { data, error } = await from('assignments')
             .select('content, options, created_at')
             .eq('code', code.toUpperCase())
             .single();
@@ -69,20 +62,26 @@ export const getAssignmentByCode = async (code: string): Promise<{ exercises: Ex
             return null; // Le devoir n'est plus accessible (Droit à l'oubli)
         }
 
+        // Parse JSON content
+        const content = typeof data.content === 'string' 
+            ? JSON.parse(data.content) 
+            : data.content;
+        const options = typeof data.options === 'string' 
+            ? JSON.parse(data.options) 
+            : data.options;
+
         // DÉTECTION AUTOMATIQUE : Est-ce un Quiz Interactif ?
-        // On regarde si le contenu (Exercise[]) contient du JSON parsable dans 'enonce'
-        // C'est le hack qu'on a utilisé dans ExamPreparation pour stocker les questions
         let isQuiz = false;
-        if (data.content && Array.isArray(data.content) && data.content.length > 0) {
-            const firstEx = data.content[0];
+        if (content && Array.isArray(content) && content.length > 0) {
+            const firstEx = content[0];
             if (firstEx.title === "Quiz Live" || (firstEx.enonce && firstEx.enonce.trim().startsWith('['))) {
                 isQuiz = true;
             }
         }
 
         return {
-            exercises: data.content as Exercise[],
-            options: data.options as ExerciseOptions,
+            exercises: content as Exercise[],
+            options: options as ExerciseOptions,
             isQuiz: isQuiz
         };
     } catch (e) {
@@ -101,21 +100,17 @@ export interface StudentSubmission {
 }
 
 export const submitStudentQuiz = async (code: string, studentName: string, score: number, total: number, details: any) => {
-    if (!supabase) {
-        console.warn("Envoi annulé : Supabase non configuré.");
-        return false;
-    }
     try {
         console.log(`Envoi résultat pour ${studentName} (Code: ${code})...`);
-        const { error } = await supabase.from('quiz_submissions').insert({
+        const { error } = await from('quiz_submissions').insert({
             assignment_code: code.toUpperCase(),
             student_name: studentName,
-            score: score, // Peut être -1 ou 0 si non noté
+            score: score,
             total_questions: total,
             details: details
         });
         if (error) {
-            console.error("Erreur Supabase Insert:", error);
+            console.error("Erreur insertion soumission:", error);
             throw error;
         }
         console.log("Résultat envoyé avec succès !");
@@ -127,22 +122,21 @@ export const submitStudentQuiz = async (code: string, studentName: string, score
 };
 
 export const getQuizSubmissions = async (code: string): Promise<StudentSubmission[]> => {
-    if (!supabase) return [];
-    
     try {
-        const { data, error } = await supabase
-            .from('quiz_submissions')
+        const { data, error } = await from('quiz_submissions')
             .select('student_name, score, total_questions, created_at')
             .eq('assignment_code', code.toUpperCase())
-            .order('score', { ascending: false });
+            .order('score', { ascending: false })
+            .execute();
 
         if (error) {
-            if (error.code === '42P01') console.warn("Table quiz_submissions manquante.");
+            console.warn("Erreur récupération soumissions:", error.message);
             return [];
         }
         
-        return data as StudentSubmission[];
+        return (data || []) as StudentSubmission[];
     } catch (e) {
+        console.error("Exception récupération soumissions:", e);
         return [];
     }
 };

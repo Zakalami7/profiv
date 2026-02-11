@@ -1,5 +1,5 @@
 
-import { supabase } from './supabaseClient';
+import { from } from '../database/query-builder';
 import { CURRICULUM } from '../constants';
 import type { Curriculum } from '../types';
 
@@ -9,14 +9,9 @@ export const getCurriculum = async (): Promise<Curriculum> => {
     // 1. Retourner le cache mémoire si dispo
     if (cachedCurriculum) return cachedCurriculum;
 
-    // 2. Si pas de Supabase, fallback local immédiat
-    if (!supabase) return CURRICULUM;
-
     try {
-        // 3. Essayer de fetcher la config dynamique depuis Supabase
-        // On suppose une table 'system_config' avec une colonne 'curriculum_json'
-        const { data, error } = await supabase
-            .from('system_config')
+        // 2. Essayer de fetcher la config dynamique depuis SQLite
+        const { data, error } = await from('system_config')
             .select('curriculum_json')
             .single();
 
@@ -26,13 +21,19 @@ export const getCurriculum = async (): Promise<Curriculum> => {
             return CURRICULUM;
         }
 
-        // 4. Succès distant
-        console.log("Programme scolaire chargé depuis le Cloud ☁️");
-        cachedCurriculum = data.curriculum_json as Curriculum;
+        // 3. Succès depuis la base locale
+        console.log("Programme scolaire chargé depuis SQLite 📚");
+        
+        // Parse JSON if stored as string
+        const curriculumData = typeof data.curriculum_json === 'string'
+            ? JSON.parse(data.curriculum_json)
+            : data.curriculum_json;
+            
+        cachedCurriculum = curriculumData as Curriculum;
         return cachedCurriculum;
 
     } catch (e) {
-        console.warn("Erreur chargement programme distant, repli sur local.", e);
+        console.warn("Erreur chargement programme depuis SQLite, repli sur local.", e);
         return CURRICULUM;
     }
 };

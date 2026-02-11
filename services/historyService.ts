@@ -1,68 +1,75 @@
 
-import { supabase } from './supabaseClient';
+import { from } from '../database/query-builder';
 import type { HistoryItem } from '../types';
 
 export const getUserHistory = async (userId: string): Promise<HistoryItem[]> => {
-    if (!supabase) return [];
-    
     try {
-        const { data, error } = await supabase
-            .from('user_histories')
+        const { data, error } = await from('user_histories')
             .select('data')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(50);
+            .limit(50)
+            .execute();
 
         if (error) {
-            // Si la table n'existe pas encore (Code 42P01 ou message spécifique), on l'ignore silencieusement
-            if (error.code !== '42P01' && !error.message.includes('Could not find the table')) {
-                console.warn("Erreur chargement historique cloud:", error.message);
-            }
+            console.warn("Erreur chargement historique:", error.message);
             return [];
         }
 
-        return data.map((row: any) => row.data as HistoryItem);
+        return data?.map((row: any) => JSON.parse(row.data) as HistoryItem) || [];
     } catch (e) {
+        console.error("Exception chargement historique:", e);
         return [];
     }
 };
 
 export const addToHistory = async (userId: string, item: HistoryItem) => {
-    if (!supabase) return;
-
     try {
-        const { error } = await supabase.from('user_histories').insert({
+        const { error } = await from('user_histories').insert({
             user_id: userId,
             data: item
         });
+        
         if (error) {
-            // Ignorer l'erreur si la table n'existe pas
-            if (error.code !== '42P01' && !error.message.includes('Could not find the table')) {
-                console.error("Erreur sauvegarde historique cloud:", error.message);
-            }
+            console.error("Erreur sauvegarde historique:", error.message);
         }
     } catch (e) {
-        // Fail silently
+        console.error("Exception sauvegarde historique:", e);
     }
 };
 
 export const removeFromHistory = async (userId: string, itemId: string) => {
-    if (!supabase) return;
-
     try {
-        // Utilisation du filtre JSON pour cibler l'ID à l'intérieur de la colonne 'data'
-        const { error } = await supabase
-            .from('user_histories')
-            .delete()
+        // For SQLite, we need to fetch and filter manually since JSON path queries are different
+        const { data, error: fetchError } = await from('user_histories')
+            .select('id, data')
             .eq('user_id', userId)
-            .filter('data->>id', 'eq', itemId); // Syntaxe PostgREST pour JSONB
-
-        if (error) {
-            if (error.code !== '42P01' && !error.message.includes('Could not find the table')) {
-                console.error("Erreur suppression historique cloud:", error.message);
+            .execute();
+            
+        if (fetchError || !data) {
+            console.error("Erreur récupération historique pour suppression:", fetchError?.message);
+            return;
+        }
+        
+        // Find the item with matching ID in the data JSON
+        const itemToDelete = data.find((row: any) => {
+            try {
+                const parsed = JSON.parse(row.data);
+                return parsed.id === itemId;
+            } catch {
+                return false;
+            }
+        });
+        
+        if (itemToDelete) {
+            const { error } = await from('user_histories')
+                .eq('id', itemToDelete.id)
+                .delete();
+            if (error) {
+                console.error("Erreur suppression historique:", error.message);
             }
         }
     } catch (e) {
-        // Fail silently
+        console.error("Exception suppression historique:", e);
     }
 };

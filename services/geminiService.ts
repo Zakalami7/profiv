@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Exercise, ExerciseOptions, QuizQuestion, QuizAnalysis, SWOTResult } from '../types';
-import { supabase } from './supabaseClient';
+import { from } from '../database/query-builder';
 import { DEFAULT_AI_MODEL, OFFICIAL_EXAM_STRUCTURES } from '../constants';
 
 const getApiKey = () => {
@@ -46,12 +46,21 @@ const generateCacheSignature = (options: ExerciseOptions): string => {
 };
 
 export const generateExercises = async (options: ExerciseOptions, modelName: string = DEFAULT_AI_MODEL): Promise<Exercise[]> => {
-  if (supabase) {
-      const signature = generateCacheSignature(options);
-      try {
-          const { data: cachedData } = await supabase.from('exercise_cache').select('content').eq('signature', signature).maybeSingle();
-          if (cachedData) return cachedData.content as Exercise[];
-      } catch (err) {}
+  // Check cache first
+  const signature = generateCacheSignature(options);
+  try {
+      const { data: cachedData } = await from('exercise_cache')
+          .select('content')
+          .eq('signature', signature)
+          .single();
+      if (cachedData) {
+          const content = typeof cachedData.content === 'string' 
+              ? JSON.parse(cachedData.content) 
+              : cachedData.content;
+          return content as Exercise[];
+      }
+  } catch (err) {
+      // Cache miss or error, continue to generate
   }
 
   if (!API_KEY || !ai) throw new Error("Service IA non configuré.");
@@ -179,8 +188,14 @@ export const generateExercises = async (options: ExerciseOptions, modelName: str
       title: ex.title || (isArabicSubject ? `تمرين ${i+1}` : `Exercice ${i+1}`) 
   }));
   
-  if (supabase) {
-     supabase.from('exercise_cache').insert({ signature: generateCacheSignature(options), content: result }).then(() => {});
+  // Cache the result
+  try {
+      await from('exercise_cache').insert({ 
+          signature: signature, 
+          content: result 
+      });
+  } catch (err) {
+      // Fail silently on cache error
   }
   
   return result;
