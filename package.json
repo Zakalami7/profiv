@@ -22,6 +22,9 @@
     "katex": "0.16.9",
     "react-dom": "^19.2.0",
     "@supabase/supabase-js": "2.39.7",
+    "sqlite3": "^5.1.6",
+    "sqlite": "^5.1.1",
+
     "docx": "^9.5.1",
     "@stripe/stripe-js": "^8.6.4",
     "zod": "^3.22.4",
