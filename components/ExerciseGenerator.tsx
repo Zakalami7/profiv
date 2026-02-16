@@ -16,8 +16,13 @@ import {
   Check,
   X,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  EyeOff,
+  Eye,
+  FileText,
+  Download
 } from 'lucide-react';
+
 import { clsx } from 'clsx';
 import type { ExerciseOptions, Exercise } from '../types';
 import { CURRICULUM } from '../constants';
@@ -71,8 +76,14 @@ const ExerciseGenerator: React.FC<ExerciseGeneratorProps> = ({
     schoolName: initialOptions.schoolName || '',
     includeOfficialHeader: initialOptions.includeOfficialHeader ?? true,
     exerciseCount: isProfessorMode ? 10 : (initialOptions.exerciseCount || 5),
-    selectedChapters: initialOptions.selectedChapters || []
+    selectedChapters: initialOptions.selectedChapters || [],
+    // New options
+    includeCorrigé: initialOptions.includeCorrigé ?? true,
+    includeResponseElements: initialOptions.includeResponseElements ?? true,
+    includeIllustrations: initialOptions.includeIllustrations ?? true,
+    includeMinistryHeader: initialOptions.includeMinistryHeader ?? true
   });
+
 
   const [subjects, setSubjects] = useState<string[]>([]);
   const [chapters, setChapters] = useState<string[]>([]);
@@ -92,9 +103,14 @@ const ExerciseGenerator: React.FC<ExerciseGeneratorProps> = ({
         setOptions(prev => ({
           ...prev,
           subject: Object.keys(levelData)[0],
-          chapter: ''
+          chapter: '',
+          includeCorrigé: prev.includeCorrigé,
+          includeResponseElements: prev.includeResponseElements,
+          includeIllustrations: prev.includeIllustrations,
+          includeMinistryHeader: prev.includeMinistryHeader
         }));
       }
+
     }
   }, [options.level]);
 
@@ -107,9 +123,14 @@ const ExerciseGenerator: React.FC<ExerciseGeneratorProps> = ({
       if (!levelData[options.subject].includes(options.chapter)) {
         setOptions(prev => ({
           ...prev,
-          chapter: levelData[options.subject][0]
+          chapter: levelData[options.subject][0],
+          includeCorrigé: prev.includeCorrigé,
+          includeResponseElements: prev.includeResponseElements,
+          includeIllustrations: prev.includeIllustrations,
+          includeMinistryHeader: prev.includeMinistryHeader
         }));
       }
+
     }
   }, [options.level, options.subject]);
 
@@ -347,53 +368,99 @@ const ExerciseGenerator: React.FC<ExerciseGeneratorProps> = ({
           </div>
 
           {/* Inclure des illustrations */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeIllustration"
+              checked={options.includeIllustration}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeIllustration: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeIllustration" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
               <BookOpen size={20} className="text-green-500" />
-              <span className="text-sm font-medium text-gray-700">
-                Inclure des illustrations
-              </span>
-            </div>
-            <button
-              onClick={() => setOptions(prev => ({ ...prev, includeIllustration: !prev.includeIllustration }))}
-              className={clsx(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                options.includeIllustration ? 'bg-blue-600' : 'bg-gray-200'
-              )}
-            >
-              <span
-                className={clsx(
-                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                  options.includeIllustration ? 'translate-x-6' : 'translate-x-1'
-                )}
-              />
-            </button>
+              Inclure des illustrations
+            </label>
           </div>
 
+
           {/* En-tête officiel */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeOfficialHeader"
+              checked={options.includeOfficialHeader}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeOfficialHeader: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeOfficialHeader" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
               <Target size={20} className="text-red-500" />
-              <span className="text-sm font-medium text-gray-700">
-                En-tête officiel
-              </span>
-            </div>
-            <button
-              onClick={() => setOptions(prev => ({ ...prev, includeOfficialHeader: !prev.includeOfficialHeader }))}
-              className={clsx(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                options.includeOfficialHeader ? 'bg-blue-600' : 'bg-gray-200'
-              )}
-            >
-              <span
-                className={clsx(
-                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                  options.includeOfficialHeader ? 'translate-x-6' : 'translate-x-1'
-                )}
-              />
-            </button>
+              En-tête officiel
+            </label>
           </div>
+
+          {/* Inclure le corrigé */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeCorrigé"
+              checked={options.includeCorrigé}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeCorrigé: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeCorrigé" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <Check size={20} className="text-green-600" />
+              Inclure le corrigé
+            </label>
+          </div>
+
+          {/* Éléments de réponse détaillés */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeResponseElements"
+              checked={options.includeResponseElements}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeResponseElements: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeResponseElements" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <FileText size={20} className="text-blue-500" />
+              Éléments de réponse détaillés
+            </label>
+          </div>
+
+
+          {/* 🖼️ Illustrations */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeIllustrations"
+              checked={options.includeIllustrations}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeIllustrations: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeIllustrations" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <span className="text-lg">🖼️</span>
+              Schémas et figures si pertinent
+            </label>
+          </div>
+
+          {/* 🏛️ Format Ministère */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="includeMinistryHeader"
+              checked={options.includeMinistryHeader}
+              onChange={(e) => setOptions(prev => ({ ...prev, includeMinistryHeader: e.target.checked }))}
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeMinistryHeader" className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
+              <span className="text-lg">🏛️</span>
+              Format Ministère de l'Éducation
+            </label>
+          </div>
+
         </div>
+
 
         {/* Bouton de génération */}
         <div className="mt-6 flex items-center justify-between">

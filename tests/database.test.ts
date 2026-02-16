@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { from } from '../database/query-builder';
-import { initializeDatabase, closeDatabase } from '../database/connection';
-import { signUp, signIn, getUser } from '../auth/auth-system';
+import { from } from '../database/query-builder.js';
+import { initializeDatabase, closeDatabase } from '../database/connection.js';
+import { signUp, signIn, getUser } from '../auth/auth-system.js';
 
 describe('Database Layer Tests', () => {
     beforeAll(async () => {
@@ -98,11 +98,15 @@ describe('Database Layer Tests', () => {
     describe('Query Builder - UPDATE operations', () => {
         it('should update data with filters', async () => {
             // First insert a test profile
-            const { data: user } = await signUp('test-update@example.com', 'password123', {
+            const { user, error: signUpError } = await signUp({ 
+                email: 'test-update@example.com', 
+                password: 'password123', 
                 preferred_cycle: 'COLLEGE',
                 school_name: 'Test School'
             });
 
+            expect(signUpError).toBeNull();
+            
             if (user) {
                 const { data, error } = await from('profiles')
                     .eq('id', user.id)
@@ -141,16 +145,16 @@ describe('Authentication System Tests', () => {
             const email = `test-${Date.now()}@example.com`;
             const password = 'SecurePass123!';
             
-            const { data, error } = await signUp(email, password, {
+            const { user, error } = await signUp({ 
+                email, 
+                password, 
                 preferred_cycle: 'LYCEE',
                 school_name: 'Test High School'
             });
 
             expect(error).toBeNull();
-            expect(data).toBeDefined();
-            expect(data?.email).toBe(email);
-            expect(data?.plan).toBe('FREE');
-            expect(data?.role).toBe('STUDENT');
+            expect(user).toBeDefined();
+            expect(user?.email).toBe(email);
         });
 
         it('should not allow duplicate emails', async () => {
@@ -158,13 +162,14 @@ describe('Authentication System Tests', () => {
             const password = 'SecurePass123!';
 
             // First signup
-            await signUp(email, password);
+            const firstResult = await signUp({ email, password });
+            expect(firstResult.error).toBeNull();
 
             // Second signup with same email should fail
-            const { data, error } = await signUp(email, password);
+            const { user, error } = await signUp({ email, password });
             
             expect(error).toBeDefined();
-            expect(data).toBeNull();
+            expect(user).toBeNull();
         });
     });
 
@@ -174,38 +179,42 @@ describe('Authentication System Tests', () => {
             const password = 'SecurePass123!';
 
             // Create user first
-            await signUp(email, password);
+            const signUpResult = await signUp({ email, password });
+            expect(signUpResult.error).toBeNull();
 
             // Try to login
-            const { data, error } = await signIn(email, password);
+            const { user, session, error } = await signIn({ email, password });
             
             expect(error).toBeNull();
-            expect(data).toBeDefined();
-            expect(data?.user).toBeDefined();
-            expect(data?.session).toBeDefined();
+            expect(user).toBeDefined();
+            expect(session).toBeDefined();
         });
 
         it('should reject invalid credentials', async () => {
-            const { data, error } = await signIn('nonexistent@example.com', 'wrongpassword');
+            const { user, error } = await signIn({ 
+                email: 'nonexistent@example.com', 
+                password: 'wrongpassword' 
+            });
             
             expect(error).toBeDefined();
-            expect(data).toBeNull();
+            expect(user).toBeNull();
         });
     });
 
     describe('User Management', () => {
-        it('should get user by ID', async () => {
+        it('should get user by token', async () => {
             const email = `get-user-${Date.now()}@example.com`;
             const password = 'SecurePass123!';
 
-            const { data: createdUser } = await signUp(email, password);
+            const { user, session, error: signUpError } = await signUp({ email, password });
+            expect(signUpError).toBeNull();
             
-            if (createdUser) {
-                const { data, error } = await getUser(createdUser.id);
+            if (session?.access_token) {
+                const { user: fetchedUser, error } = await getUser(session.access_token);
                 
                 expect(error).toBeNull();
-                expect(data).toBeDefined();
-                expect(data?.id).toBe(createdUser.id);
+                expect(fetchedUser).toBeDefined();
+                expect(fetchedUser?.id).toBe(user?.id);
             }
         });
     });
@@ -222,7 +231,7 @@ describe('Service Integration Tests', () => {
 
     describe('History Service', () => {
         it('should add and retrieve history items', async () => {
-            const { addToHistory, getUserHistory } = await import('../services/historyService');
+            const { addToHistory, getUserHistory } = await import('../services/historyService.js');
             
             const userId = 'test-user-' + Date.now();
             const historyItem = {
@@ -256,7 +265,7 @@ describe('Service Integration Tests', () => {
 
     describe('Assignment Service', () => {
         it('should create and retrieve assignments', async () => {
-            const { createAssignment, getAssignmentByCode } = await import('../services/assignmentService');
+            const { createAssignment, getAssignmentByCode } = await import('../services/assignmentService.js');
             
             const exercises = [{ title: 'Test', enonce: 'Test', corrige: 'Test' }];
             const options = {
@@ -288,7 +297,7 @@ describe('Service Integration Tests', () => {
 
     describe('Curriculum Service', () => {
         it('should retrieve curriculum', async () => {
-            const { getCurriculum } = await import('../services/curriculumService');
+            const { getCurriculum } = await import('../services/curriculumService.js');
             
             const curriculum = await getCurriculum();
             expect(curriculum).toBeDefined();

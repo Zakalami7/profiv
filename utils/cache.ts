@@ -1,10 +1,22 @@
 
 /**
  * Utilitaires de cache pour les exercices générés
- * Supporte Redis (production) et localStorage (développement)
+ * Supporte Redis (production), SQLite (server fallback), et localStorage (développement)
  */
 
 import { Exercise, ExerciseOptions } from '../types';
+
+// Import SQLite conditionally for server-side usage
+let sqliteDb: any = null;
+if (typeof window === 'undefined') {
+  // Server-side only
+  import('../database/connection').then((module) => {
+    sqliteDb = module;
+  }).catch(() => {
+    console.warn('SQLite not available for caching');
+  });
+}
+
 
 interface CacheEntry {
   data: Exercise[];
@@ -20,7 +32,7 @@ interface CacheStats {
 
 class CacheManager {
   private redis: any = null;
-  private mongo: any = null;
+  private useSQLite: boolean = false;
   private useLocalStorage: boolean = false;
   private stats: CacheStats = { hits: 0, misses: 0, hitRate: 0 };
   private readonly DEFAULT_TTL = 86400; // 24 heures en secondes
@@ -37,18 +49,27 @@ class CacheManager {
         const { createClient } = await import('redis');
         this.redis = createClient({ url: process.env.REDIS_URL });
         await this.redis.connect();
-        console.log('Cache Redis initialisé');
+        console.log('✅ Cache Redis initialisé');
+      } else if (typeof window === 'undefined') {
+        // Server-side: use SQLite for caching
+        this.useSQLite = true;
+        console.log('✅ Cache SQLite initialisé (server-side)');
       } else if (typeof window !== 'undefined') {
         // Fallback localStorage pour le frontend
         this.useLocalStorage = true;
         this.loadStats();
-        console.log('Cache localStorage initialisé');
+        console.log('✅ Cache localStorage initialisé (client-side)');
       }
     } catch (error) {
-      console.warn('Erreur d\'initialisation du cache:', error);
-      this.useLocalStorage = true;
+      console.warn('⚠️ Erreur d\'initialisation du cache:', error);
+      if (typeof window === 'undefined') {
+        this.useSQLite = true;
+      } else {
+        this.useLocalStorage = true;
+      }
     }
   }
+
 
   /**
    * Génère une signature unique pour les options d'exercices
@@ -90,6 +111,29 @@ class CacheManager {
             await this.redis.del(signature);
           }
         }
+      } else if (this.useSQLite && sqliteDb) {
+        // SQLite cache (server-side fallback)
+        try {
+          const db = await sqliteDb.getDatabase();
+          const row = await db.get(
+            'SELECT content, expires_at FROM exercise_cache WHERE signature = ?',
+            signature
+          );
+          if (row) {
+            // Check if expired
+            if (row.expires_at && new Date(row.expires_at) < new Date()) {
+              // Delete expired entry
+              await db.run('DELETE FROM exercise_cache WHERE signature = ?', signature);
+            } else {
+              const entry: CacheEntry = JSON.parse(row.content);
+              this.stats.hits++;
+              this.updateHitRate();
+              return entry.data;
+            }
+          }
+        } catch (sqliteError) {
+          console.warn('SQLite cache get error:', sqliteError);
+        }
       } else if (this.useLocalStorage) {
         // LocalStorage cache
         const cached = localStorage.getItem(`cache_${signature}`);
@@ -119,6 +163,7 @@ class CacheManager {
       return null;
     }
   }
+
 
   /**
    * Stocke les exercices dans le cache
@@ -151,6 +196,35 @@ class CacheManager {
           const toDelete = sortedKeys.slice(0, keys.length - this.MAX_ENTRIES);
           await Promise.all(toDelete.map(({ key }) => this.redis.del(key)));
         }
+      } else if (this.useSQLite && sqliteDb) {
+        // SQLite cache (server-side fallback)
+        try {
+          const db = await sqliteDb.getDatabase();
+          const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
+          
+          await db.run(
+            `INSERT OR REPLACE INTO exercise_cache (signature, content, created_at, expires_at) 
+             VALUES (?, ?, datetime('now'), ?)`,
+            signature,
+            JSON.stringify(entry),
+            expiresAt
+          );
+
+          // Cleanup old entries if exceeding max
+          const count = await db.get('SELECT COUNT(*) as count FROM exercise_cache');
+          if (count && count.count > this.MAX_ENTRIES) {
+            await db.run(
+              `DELETE FROM exercise_cache WHERE signature IN (
+                SELECT signature FROM exercise_cache 
+                ORDER BY created_at ASC 
+                LIMIT ?
+              )`,
+              count.count - this.MAX_ENTRIES
+            );
+          }
+        } catch (sqliteError) {
+          console.warn('SQLite cache set error:', sqliteError);
+        }
       } else if (this.useLocalStorage) {
         // LocalStorage cache
         localStorage.setItem(`cache_${signature}`, JSON.stringify(entry));
@@ -174,6 +248,7 @@ class CacheManager {
     }
   }
 
+
   /**
    * Invalide une entrée du cache
    */
@@ -183,6 +258,13 @@ class CacheManager {
 
       if (this.redis) {
         await this.redis.del(signature);
+      } else if (this.useSQLite && sqliteDb) {
+        try {
+          const db = await sqliteDb.getDatabase();
+          await db.run('DELETE FROM exercise_cache WHERE signature = ?', signature);
+        } catch (sqliteError) {
+          console.warn('SQLite cache invalidate error:', sqliteError);
+        }
       } else if (this.useLocalStorage) {
         localStorage.removeItem(`cache_${signature}`);
       }
@@ -190,6 +272,7 @@ class CacheManager {
       console.error('Erreur lors de l\'invalidation du cache:', error);
     }
   }
+
 
   /**
    * Vide tout le cache
@@ -200,6 +283,13 @@ class CacheManager {
         const keys = await this.redis.keys('*');
         if (keys.length > 0) {
           await this.redis.del(...keys);
+        }
+      } else if (this.useSQLite && sqliteDb) {
+        try {
+          const db = await sqliteDb.getDatabase();
+          await db.run('DELETE FROM exercise_cache');
+        } catch (sqliteError) {
+          console.warn('SQLite cache clear error:', sqliteError);
         }
       } else if (this.useLocalStorage) {
         const cacheKeys = Object.keys(localStorage)
@@ -214,6 +304,7 @@ class CacheManager {
       console.error('Erreur lors du vidage du cache:', error);
     }
   }
+
 
   /**
    * Met à jour le taux de succès du cache
@@ -255,8 +346,9 @@ class CacheManager {
    * Vérifie si le cache est disponible
    */
   isAvailable(): boolean {
-    return this.redis !== null || this.useLocalStorage;
+    return this.redis !== null || this.useSQLite || this.useLocalStorage;
   }
+
 }
 
 // Singleton instance

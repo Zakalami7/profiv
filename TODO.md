@@ -1,98 +1,31 @@
-# Supabase → SQLite Migration TODO
+# Fix database.test.ts Errors - Task List
 
-## 🚀 Pull Request Created
+## Steps to Complete:
 
-**Branch:** `blackboxai/supabase-to-sqlite-migration`  
-**PR URL:** https://github.com/Zakalami7/profiv/pull/new/blackboxai/supabase-to-sqlite-migration
+- [x] 1. Analyze test file and identify all errors
+- [x] 2. Read related source files to understand correct function signatures
+- [x] 3. Create comprehensive fix plan
 
-**Status:** Phase 1 complete and pushed to GitHub  
-**Next Action:** Create PR via GitHub UI (GitHub CLI auth pending)
+### Fixes to Apply:
 
----
+- [x] 4. Fix import paths - Add `.js` extensions for ES module compatibility
+  - `from '../database/query-builder'` → `from '../database/query-builder.js'`
+  - `from '../database/connection'` → `from '../database/connection.js'`
+  - `from '../auth/auth-system'` → `from '../auth/auth-system.js'`
 
-## Phase 1: Database Layer ✅ COMPLETED
+- [x] 5. Fix `signUp` calls - Change from positional args to object syntax
+  - `signUp(email, password, { ... })` → `signUp({ email, password, preferred_cycle, school_name })`
 
+- [x] 6. Fix `signIn` calls - Change from positional args to object syntax
+  - `signIn(email, password)` → `signIn({ email, password })`
 
-### 1.1 SQLite Schema
-- [x] Create `database/sqlite-schema.sql` with all 7 tables
-- [x] Convert PostgreSQL types to SQLite equivalents
-- [x] Add indexes for performance
+- [x] 7. Fix `getUser` calls - Use token from session instead of user ID
+  - `getUser(createdUser.id)` → `getUser(authData.session.access_token)`
 
-### 1.2 Database Adapter
-- [x] Create `database/database-adapter.ts` - Unified interface
-- [x] Implement query builder methods
-- [x] Add error handling and logging
+- [x] 8. Update test assertions to match actual return types
+  - Changed destructuring from `data` to `{ user, session, error }` to match `AuthResponse` type
+  - Updated all test assertions to use correct property names
 
-### 1.3 Connection Management
-- [x] Create `database/connection.ts` - SQLite connection pool
-- [x] Enable WAL mode
-- [x] Configure PRAGMA settings
-
-### 1.4 Migration Script
-- [x] Create `database/migrate-to-sqlite.ts` - Schema initialization
-- [x] Add verification functions
-- [x] Migration tested and working ✅
-
-
-## Phase 2: Authentication System ✅ COMPLETED
-
-### 2.1 JWT Auth
-- [x] Create `auth/auth-system.ts` - Full implementation with signUp, signIn, signOut, refreshSession
-- [x] Implement bcrypt password hashing (12 salt rounds)
-- [x] Token generation/validation with JWT
-- [x] User profile creation on signup
-
-### 2.2 Middleware
-- [ ] Create `auth/middleware.ts` (Next step)
-- [ ] Replace Supabase RLS logic
-
-
-## Phase 3: Service Refactoring ⏳ PENDING
-
-### 3.1 History Service
-- [ ] Update `services/historyService.ts` to use adapter
-
-### 3.2 Payment Service
-- [ ] Update `services/paymentService.ts` - Replace profile updates
-
-### 3.3 Gemini Service
-- [ ] Update `services/geminiService.ts` - Replace cache operations
-
-### 3.4 Assignment Service
-- [ ] Update `services/assignmentService.ts` - Replace all DB calls
-
-### 3.5 Curriculum Service
-- [ ] Update `services/curriculumService.ts` - Replace config fetching
-
-## Phase 4: Testing ⏳ PENDING
-
-- [ ] Create `tests/database.test.ts`
-- [ ] Create `tests/auth.test.ts`
-- [ ] 95%+ coverage target
-
-## Phase 5: Documentation ⏳ PENDING
-
-- [ ] Create `MIGRATION_GUIDE.md`
-- [ ] Update environment variables
-- [ ] Remove Supabase dependencies
-
-## Completion Checklist
-
-### Phase 1: Database Layer ✅
-- [x] All 7 tables created in SQLite (profiles, system_config, exercise_cache, user_histories, assignments, quiz_submissions, auth_users)
-- [x] 12 indexes created for performance
-- [x] Database adapter with Supabase-compatible interface
-- [x] Connection pooling with WAL mode
-- [x] Migration script with verification
-- [x] Changes committed and pushed to GitHub
-
-### Phase 2: Authentication ✅
-- [x] JWT authentication system implemented
-- [x] Dependencies installed (bcrypt, jsonwebtoken, uuid)
-- [x] Auth system with all CRUD operations
-
-### Phase 3-5: Pending ⏳
-- [ ] All services refactored
-- [ ] Tests passing (95%+ coverage)
-- [ ] No Supabase dependencies remaining
-- [ ] Documentation complete
+- [x] 9. Verify all fixes compile correctly
+  - All TypeScript errors resolved
+  - File compiles successfully

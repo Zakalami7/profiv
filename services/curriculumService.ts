@@ -1,39 +1,46 @@
 
-import { from } from '../database/query-builder';
 import { CURRICULUM } from '../constants';
 import type { Curriculum } from '../types';
 
 let cachedCurriculum: Curriculum | null = null;
+
+// API base URL for backend requests
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
 
 export const getCurriculum = async (): Promise<Curriculum> => {
     // 1. Retourner le cache mémoire si dispo
     if (cachedCurriculum) return cachedCurriculum;
 
     try {
-        // 2. Essayer de fetcher la config dynamique depuis SQLite
-        const { data, error } = await from('system_config')
-            .select('curriculum_json')
-            .single();
-
-        if (error || !data || !data.curriculum_json) {
-            // Pas de config distante ou erreur, on utilise le local
+        // 2. Essayer de fetcher la config dynamique depuis le backend API
+        const response = await fetch(`${API_BASE_URL}/system_config?columns=curriculum_json&limit=1`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data || !data[0] || !data[0].curriculum_json) {
+            // Pas de config distante, on utilise le local
             cachedCurriculum = CURRICULUM;
             return CURRICULUM;
         }
 
-        // 3. Succès depuis la base locale
-        console.log("Programme scolaire chargé depuis SQLite 📚");
+        // 3. Succès depuis le backend
+        console.log("Programme scolaire chargé depuis le backend 📚");
         
         // Parse JSON if stored as string
-        const curriculumData = typeof data.curriculum_json === 'string'
-            ? JSON.parse(data.curriculum_json)
-            : data.curriculum_json;
+        const curriculumData = typeof data[0].curriculum_json === 'string'
+            ? JSON.parse(data[0].curriculum_json)
+            : data[0].curriculum_json;
             
         cachedCurriculum = curriculumData as Curriculum;
         return cachedCurriculum;
 
     } catch (e) {
-        console.warn("Erreur chargement programme depuis SQLite, repli sur local.", e);
+        console.warn("Erreur chargement programme depuis backend, repli sur local.", e);
+        cachedCurriculum = CURRICULUM;
         return CURRICULUM;
     }
 };

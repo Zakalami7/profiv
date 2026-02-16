@@ -66,7 +66,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onU
           <div className="bg-white px-4 pt-8 pb-4 sm:p-8 sm:pb-8">
             <div className="text-center sm:mt-2 mb-8">
               <h3 className="text-3xl leading-6 font-extrabold text-slate-900" id="modal-title">
-                Choisissez votre formule Profi.ai
+                Choisissez votre formule Najah IA
               </h3>
               <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
                 Des solutions adaptées aux enseignants et aux élèves marocains.
@@ -147,7 +147,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onU
                       <span className="ml-1 text-xl font-semibold text-slate-500">/an</span>
                     </p>
                     <p className="mt-2 text-xs text-indigo-600 font-semibold bg-indigo-50 inline-block px-2 py-1 rounded">Pour les pros</p>
-                    <p className="mt-6 text-slate-600">Export Word modifiable, Archivage illimité, Zéro logo Profi</p>
+                    <p className="mt-6 text-slate-600">Export Word modifiable, Archivage illimité, Zéro logo</p>
                     <ul role="list" className="mt-8 space-y-4">
                       <li className="flex">
                         <div className="bg-indigo-100 rounded-full p-1">
@@ -165,13 +165,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onU
                         <div className="bg-indigo-100 rounded-full p-1">
                           <svg className="flex-shrink-0 h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
                         </div>
-                        <span className="ml-3 text-slate-700 font-medium">Zéro logo Profi</span>
-                      </li>
-                      <li className="flex">
-                        <div className="bg-indigo-100 rounded-full p-1">
-                          <svg className="flex-shrink-0 h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <span className="ml-3 text-slate-700 font-medium">Support prioritaire</span>
+                        <span className="ml-3 text-slate-700 font-medium">Zéro logo</span>
                       </li>
                     </ul>
                   </div>
@@ -230,7 +224,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onU
                 <div className="flex flex-col rounded-2xl border-2 border-indigo-600 shadow-2xl bg-white relative transform scale-105 z-10">
                   <div className="absolute top-0 inset-x-0 -mt-4 flex justify-center">
                     <span className="bg-indigo-600 text-white px-6 py-1.5 rounded-full text-sm font-bold tracking-wide uppercase shadow-md">
-                      Tranquillité absolue
+                      Accès illimité jusqu'à la fin de l'année scolaire
                     </span>
                   </div>
                   <div className="p-8 flex-1">
@@ -246,13 +240,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onU
                         <div className="bg-indigo-100 rounded-full p-1">
                           <svg className="flex-shrink-0 h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
                         </div>
-                        <span className="ml-3 text-slate-700 font-medium">Accès illimité</span>
-                      </li>
-                      <li className="flex">
-                        <div className="bg-indigo-100 rounded-full p-1">
-                          <svg className="flex-shrink-0 h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
-                        </div>
-                        <span className="ml-3 text-slate-700 font-medium">AI Révision Tools</span>
+                        <span className="ml-3 text-slate-700 font-medium">Accès illimité AI Révision Tools</span>
                       </li>
                       <li className="flex">
                         <div className="bg-indigo-100 rounded-full p-1">

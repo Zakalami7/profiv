@@ -89,53 +89,45 @@ export const generateWordDocument = async (exercises: Exercise[], options: Exerc
                         new TableCell({
                             width: { size: 30, type: WidthType.PERCENTAGE },
                             children: [
-                                new Paragraph({ text: "ROYAUME DU MAROC", bold: true, alignment: AlignmentType.CENTER, font: "Times New Roman", size: 20 }),
-                                new Paragraph({ text: "Ministère de l'Éducation Nationale,", alignment: AlignmentType.CENTER, font: "Times New Roman", size: 16 }),
-                                new Paragraph({ text: "du Préscolaire et des Sports", alignment: AlignmentType.CENTER, font: "Times New Roman", size: 16 }),
+                                new Paragraph({ children: [new TextRun({ text: "ROYAUME DU MAROC", bold: true, font: "Times New Roman", size: 20 })], alignment: AlignmentType.CENTER }),
+                                new Paragraph({ children: [new TextRun({ text: "Ministère de l'Éducation Nationale,", font: "Times New Roman", size: 16 })], alignment: AlignmentType.CENTER }),
+                                new Paragraph({ children: [new TextRun({ text: "du Préscolaire et des Sports", font: "Times New Roman", size: 16 })], alignment: AlignmentType.CENTER }),
                                 new Paragraph({ text: "", spacing: { after: 100 } }),
-                                new Paragraph({ text: options.schoolName || "Académie Régionale ...", bold: true, alignment: AlignmentType.CENTER, font: "Times New Roman" })
+                                new Paragraph({ children: [new TextRun({ text: options.schoolName || "Académie Régionale ...", bold: true, font: "Times New Roman" })], alignment: AlignmentType.CENTER })
                             ],
-                            verticalAlign: "center"
+                            verticalAlign: docx.VerticalAlign.CENTER
                         }),
                         // Centre : Titre Examen
                         new TableCell({
                             width: { size: 40, type: WidthType.PERCENTAGE },
                             children: [
                                 new Paragraph({
-                                    text: "EXAMEN BLANC / DS",
-                                    bold: true,
-                                    size: 36, // 18pt
-                                    alignment: AlignmentType.CENTER,
-                                    font: "Arial Black"
+                                    children: [new TextRun({ text: "EXAMEN BLANC / DS", bold: true, size: 36, font: "Arial Black" })],
+                                    alignment: AlignmentType.CENTER
                                 }),
                                 new Paragraph({
-                                    text: "Session 2025",
-                                    alignment: AlignmentType.CENTER,
-                                    font: "Times New Roman",
-                                    size: 24
+                                    children: [new TextRun({ text: "Session 2025", font: "Times New Roman", size: 24 })],
+                                    alignment: AlignmentType.CENTER
                                 }),
                                 new Paragraph({
-                                    text: options.subject,
-                                    bold: true,
+                                    children: [new TextRun({ text: options.subject, bold: true, font: "Times New Roman", size: 28 })],
                                     alignment: AlignmentType.CENTER,
-                                    spacing: { before: 100 },
-                                    font: "Times New Roman",
-                                    size: 28
+                                    spacing: { before: 100 }
                                 })
                             ],
-                            verticalAlign: "center"
+                            verticalAlign: docx.VerticalAlign.CENTER
                         }),
                         // Droite : Méta-données
                         new TableCell({
                             width: { size: 30, type: WidthType.PERCENTAGE },
                             children: [
-                                new Paragraph({ text: `Niveau : ${options.level}`, alignment: AlignmentType.LEFT, font: "Times New Roman", bold: true }),
-                                new Paragraph({ text: `Durée : 2 heures`, alignment: AlignmentType.LEFT, font: "Times New Roman" }),
-                                new Paragraph({ text: `Coefficient : ...`, alignment: AlignmentType.LEFT, font: "Times New Roman" }),
+                                new Paragraph({ children: [new TextRun({ text: `Niveau : ${options.level}`, font: "Times New Roman", bold: true })], alignment: AlignmentType.LEFT }),
+                                new Paragraph({ children: [new TextRun({ text: `Durée : 2 heures`, font: "Times New Roman" })], alignment: AlignmentType.LEFT }),
+                                new Paragraph({ children: [new TextRun({ text: `Coefficient : ...`, font: "Times New Roman" })], alignment: AlignmentType.LEFT }),
                                 new Paragraph({ text: "", spacing: { after: 100 } }),
-                                new Paragraph({ text: `Pr. ${options.professorName || ".............."}`, alignment: AlignmentType.CENTER, font: "Times New Roman", italics: true })
+                                new Paragraph({ children: [new TextRun({ text: `Pr. ${options.professorName || ".............."}`, font: "Times New Roman", italics: true })], alignment: AlignmentType.CENTER })
                             ],
-                            verticalAlign: "center"
+                            verticalAlign: docx.VerticalAlign.CENTER
                         })
                     ]
                 })
@@ -147,10 +139,8 @@ export const generateWordDocument = async (exercises: Exercise[], options: Exerc
 
     // INSTRUCTIONS AUX CANDIDATS
     children.push(new Paragraph({
-        text: "L'usage de la calculatrice non programmable est autorisé.",
+        children: [new TextRun({ text: "L'usage de la calculatrice non programmable est autorisé.", italics: true, font: "Times New Roman" })],
         alignment: AlignmentType.CENTER,
-        italic: true,
-        font: "Times New Roman",
         spacing: { after: 300 }
     }));
 
@@ -190,28 +180,28 @@ export const generateWordDocument = async (exercises: Exercise[], options: Exerc
         }));
         
         children.push(...parseMarkdownToDocx(ex.enonce));
-        children.push(new Paragraph({ text: "__________________________________________________________________________", alignment: AlignmentType.CENTER, color: "CCCCCC" }));
+        children.push(new Paragraph({ 
+            text: "__________________________________________________________________________", 
+            alignment: AlignmentType.CENTER,
+            shading: { fill: "CCCCCC" }
+        }));
     });
 
     // 4. CORRIGÉ (Nouvelle Page)
     children.push(new Paragraph({ children: [new PageBreak()] }));
     
     children.push(new Paragraph({ 
-        text: "ÉLÉMENTS DE RÉPONSE (CORRIGÉ) ET BARÈME", 
-        bold: true, 
-        size: 28, 
+        children: [new TextRun({ text: "ÉLÉMENTS DE RÉPONSE (CORRIGÉ) ET BARÈME", bold: true, size: 28, color: "006400", font: "Arial" })],
         alignment: AlignmentType.CENTER,
-        color: "006400", // Vert foncé officiel pour corrections
-        spacing: { after: 300 },
-        font: "Arial"
+        spacing: { after: 300 }
     }));
 
     const correctionTableRows = [
         new TableRow({
             children: [
-                new TableCell({ children: [new Paragraph({ text: "Questions", bold: true })], width: { size: 20, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ text: "Détails de la réponse", bold: true })], width: { size: 60, type: WidthType.PERCENTAGE } }),
-                new TableCell({ children: [new Paragraph({ text: "Note", bold: true })], width: { size: 20, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Questions", bold: true })] })], width: { size: 20, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Détails de la réponse", bold: true })] })], width: { size: 60, type: WidthType.PERCENTAGE } }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Note", bold: true })] })], width: { size: 20, type: WidthType.PERCENTAGE } }),
             ]
         })
     ];
@@ -221,9 +211,11 @@ export const generateWordDocument = async (exercises: Exercise[], options: Exerc
     
     exercises.forEach((ex, idx) => {
         children.push(new Paragraph({ 
-            text: `Corrigé ${ex.title || `Exercice ${idx + 1}`}`, 
-            bold: true,
-            color: "006400",
+            children: [new TextRun({ 
+                text: `Corrigé ${ex.title || `Exercice ${idx + 1}`}`, 
+                bold: true,
+                color: "006400"
+            })],
             spacing: { before: 200, after: 100 }
         }));
         children.push(...parseMarkdownToDocx(ex.corrige));
@@ -251,11 +243,19 @@ export const generateQuizWordDocument = async (questions: QuizQuestion[], option
     // mais en pratique, vous devriez garder la fonction existante.
     // Je remets le code existant pour ne rien casser.
     
-    children.push(new Paragraph({ text: "TEST DIAGNOSTIC", heading: docx.HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }));
-    children.push(new Paragraph({ text: subject, size: 24, alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: "TEST DIAGNOSTIC", bold: true, size: 32 })], alignment: AlignmentType.CENTER }));
+    children.push(new Paragraph({ children: [new TextRun({ text: subject, size: 24 })], alignment: AlignmentType.CENTER, spacing: { after: 400 } }));
 
     questions.forEach((q, i) => {
-        children.push(new Paragraph({ children: [new TextRun({ text: `Q${i + 1} : `, bold: true }), ...parseMarkdownToDocx(q.question)[0].children], spacing: { after: 100 } }));
+        const questionParagraphs = parseMarkdownToDocx(q.question);
+        const questionRuns: docx.TextRun[] = [new TextRun({ text: `Q${i + 1} : `, bold: true })];
+        if (questionParagraphs.length > 0) {
+            const firstPara = questionParagraphs[0] as any;
+            if (firstPara.children && Array.isArray(firstPara.children)) {
+                questionRuns.push(...firstPara.children);
+            }
+        }
+        children.push(new Paragraph({ children: questionRuns, spacing: { after: 100 } }));
         q.choices.forEach((c, idx) => {
              children.push(new Paragraph({ text: `[ ${String.fromCharCode(65 + idx)} ] ${c}`, indent: { left: 720 } }));
         });
@@ -263,10 +263,10 @@ export const generateQuizWordDocument = async (questions: QuizQuestion[], option
     });
 
     children.push(new Paragraph({ children: [new PageBreak()] }));
-    children.push(new Paragraph({ text: "CORRIGÉ PROFESSEUR", bold: true, color: "FF0000", size: 24, alignment: AlignmentType.CENTER, spacing: { after: 300 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: "CORRIGÉ PROFESSEUR", bold: true, color: "FF0000", size: 24 })], alignment: AlignmentType.CENTER, spacing: { after: 300 } }));
 
     questions.forEach((q, i) => {
-        children.push(new Paragraph({ text: `Réponse Q${i+1} :`, bold: true }));
+        children.push(new Paragraph({ children: [new TextRun({ text: `Réponse Q${i+1} :`, bold: true })] }));
         q.choices.forEach((c, idx) => {
             const isCorrect = idx === q.correctAnswerIndex;
             children.push(new Paragraph({ children: [new TextRun({ text: `[ ${String.fromCharCode(65 + idx)} ] ${c} ${isCorrect ? '(VRAI)' : ''}`, color: isCorrect ? "008000" : "000000", bold: isCorrect })], indent: { left: 720 } }));

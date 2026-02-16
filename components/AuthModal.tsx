@@ -97,8 +97,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
     if (errorMsg.includes("Rate limit exceeded") || errorMsg.includes("Too many requests") || status === 429) {
       return "⏳ Trop de tentatives. Attendez 60 secondes ou utilisez le mode 'Accès Immédiat' ci-dessous.";
     }
+    if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError") || errorMsg.includes("network")) {
+      return "⚠️ Problème de connexion. Vérifiez votre internet ou utilisez le mode 'Accès Immédiat'.";
+    }
     return "Une erreur est survenue.";
   };
+
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,11 +148,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
       const status = err.status;
       setError(translateError(msg, status));
       
-      // Si l'erreur indique que l'email n'est pas confirmé, existe déjà, ou trop de tentatives, on propose de renvoyer ou le mode secours
-      if (msg.includes("Email not confirmed") || msg.includes("User already registered") || err.status === 429) {
+      // Si l'erreur indique que l'email n'est pas confirmé, existe déjà, trop de tentatives, ou problème réseau, on propose le mode secours
+      if (msg.includes("Email not confirmed") || msg.includes("User already registered") || err.status === 429 ||
+          msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network")) {
           setShowResend(true);
       }
     } finally {
+
       setLoading(false);
     }
   };
@@ -159,7 +165,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialVi
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-fade-in-up">
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-             <h3 className="font-bold text-slate-800 text-lg">{isLogin ? 'Connexion Profi' : 'Créer un compte'}</h3>
+             <h3 className="font-bold text-slate-800 text-lg">{isLogin ? 'Connexion Najah IA' : 'Créer un compte'}</h3>
+
              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
              </button>

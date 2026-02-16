@@ -4,16 +4,32 @@ import type { Exercise, ExerciseOptions, QuizQuestion, QuizAnalysis, SWOTResult 
 import { from } from '../database/query-builder';
 import { DEFAULT_AI_MODEL, OFFICIAL_EXAM_STRUCTURES } from '../constants';
 
-const getApiKey = () => {
-    try {
-        if (typeof process !== 'undefined' && process.env) return process.env.API_KEY;
-        if (typeof import.meta !== 'undefined' && (import.meta as any).env) return (import.meta as any).env.API_KEY || (import.meta as any).env.VITE_API_KEY;
-    } catch (e) { return undefined; }
-    return undefined;
+const getApiKey = (): string => {
+    // Use environment variable (NEVER hardcode API keys!)
+    const key = import.meta.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    
+    if (!key) {
+        console.error(
+            '[CRITICAL] GEMINI_API_KEY not configured. ' +
+            'Add VITE_GEMINI_API_KEY to your .env.local file. ' +
+            'Never commit API keys to version control!'
+        );
+        throw new Error('Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in .env.local');
+    }
+    
+    return key;
 };
 
-const API_KEY = getApiKey();
-const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
+let API_KEY: string | null = null;
+let ai: any = null;
+
+try {
+    API_KEY = getApiKey();
+    ai = new GoogleGenAI({ apiKey: API_KEY });
+} catch (error) {
+    console.warn('[WARNING] Gemini API initialization failed:', error);
+    // Continue without AI (will fall back to local service)
+}
 
 // Mapping pour traduire les options techniques en Arabe dans le prompt
 const ARABIC_MAP: Record<string, string> = {
@@ -81,14 +97,41 @@ export const generateExercises = async (options: ExerciseOptions, modelName: str
 
       const arabicDiff = ARABIC_MAP[difficulty] || difficulty;
 
+      // Build prompt based on options
+      let additionalInstructions = "";
+
+      if (options.includeCorrigé) {
+        additionalInstructions += `
+        - **تضمين التصحيح**: يجب تضمين التصحيح التفصيلي مع سلم التنقيط لكل تمرين.
+        `;
+      } else {
+        additionalInstructions += `
+        - **بدون تصحيح**: لا تضمن التصحيح في المخرجات.
+        `;
+      }
+
+      if (options.includeIllustrations) {
+        additionalInstructions += `
+        - **الرسوم التوضيحية**: قم بتضمين رسومات توضيحية (SVG) عند الحاجة لتوضيح المفاهيم.
+        `;
+      }
+
+      if (options.includeMinistryHeader) {
+        additionalInstructions += `
+        - **التنسيق الرسمي**: استخدم تنسيق وزارة التربية الوطنية الرسمي.
+        `;
+      }
+
       prompt = `
         تقمص دور مفتش تربوي بوزارة التربية الوطنية والتعليم الأولي والرياضة (المغرب).
         المهمة: صياغة موضوع امتحان (فرض محروس أو امتحان موحد) للمستوى: ${level}.
         المادة: ${subject}.
         ${chapterInstruction}
         مستوى الصعوبة: ${arabicDiff}.
+        عدد التمارين المطلوب: ${options.exerciseCount} تمرين/تمارين.
 
         **تعليمات صارمة للشكل والمحتوى (مطابقة للأطر المرجعية المحينة):**
+        - يجب أن يحتوي الموضوع على ${options.exerciseCount} تمرين/تمارين بالضبط.
         1. **الهيكلة الرسمية**:
            - يجب أن يحاكي الموضوع ورقة الامتحان الرسمي تماماً.
            - استخدم ترقيماً هرمياً واضحاً (أولاً، 1، أ، ب...).
@@ -100,13 +143,14 @@ export const generateExercises = async (options: ExerciseOptions, modelName: str
            - التربية الإسلامية: وضعية دامجة + إسناد (آيات/أحاديث) + أسئلة المداخل الخمسة.
            - اللغة العربية: نص + أسئلة الفهم والتحليل + الدرس اللغوي + التعبير والإنشاء.
         4. **مهم**: لا تذكر اسم المجال أو الفصل في عنوان التمرين أو نصه.
+        ${additionalInstructions}
 
         **تنسيق الإخراج (JSON):**
         [{
            "title": "تمرين [رقم]",
            "enonce": "نص التمرين بتنسيق Markdown (استخدم العناوين ## والخط العريض ** للنصوص الأساسية)...",
-           "corrige": "عناصر الإجابة وسلم التنقيط المقترح...",
-           "illustrationSVG": null
+           "corrige": ${options.includeCorrigé ? '"عناصر الإجابة وسلم التنقيط المقترح..."' : '""'},
+           "illustrationSVG": ${options.includeIllustrations ? '"<svg>...</svg>"' : 'null'}
         }]
       `;
   } else {
@@ -132,19 +176,47 @@ export const generateExercises = async (options: ExerciseOptions, modelName: str
           `;
       }
 
+      // Build prompt based on options
+      let additionalInstructions = "";
+
+      if (options.includeCorrigé) {
+        additionalInstructions += `
+        - **Inclusion du corrigé**: Fournir une correction détaillée avec barème pour chaque exercice.
+        `;
+      } else {
+        additionalInstructions += `
+        - **Sans corrigé**: Ne pas inclure de correction dans la sortie.
+        `;
+      }
+
+      if (options.includeIllustrations) {
+        additionalInstructions += `
+        - **Illustrations**: Inclure des illustrations (SVG) lorsque nécessaire pour clarifier les concepts.
+        `;
+      }
+
+      if (options.includeMinistryHeader) {
+        additionalInstructions += `
+        - **Format officiel**: Utiliser le format officiel du Ministère de l'Éducation Nationale.
+        `;
+      }
+
       prompt = `
         Rôle : Inspecteur Pédagogique (Ministère de l'Éducation Nationale - Maroc).
         Tâche : Rédiger un sujet d'examen officiel (Devoir Surveillé ou Examen Blanc) pour le niveau : ${level}.
         Matière : ${subject}.
         ${chapterInstruction}
         Difficulté : ${difficulty}.
+        Nombre d'exercices à générer : ${options.exerciseCount} exercice(s).
 
         **INSTRUCTIONS DE FORME (STRICTES) :**
+        - Le sujet doit contenir exactement ${options.exerciseCount} exercice(s).
         - Le contenu doit respecter scrupuleusement le **Cadre de Référence (Cadre Référentiel)** de l'année en cours.
         - **Mise en page** : Utilise Markdown pour simuler la mise en page officielle (Gras pour les mots clés, Listes pour les données).
         - **Barème** : Indique une estimation des points pour chaque question (ex: (0.5 pt)).
         - **Rigueur** : Aucune ambiguïté dans les questions. Les notations doivent être celles utilisées dans les manuels marocains officiels.
         - **Important** : Ne mentionnez pas le nom du chapitre ou du thème dans le titre de l'exercice ou dans son contenu.
+        ${additionalInstructions}
 
         ${scienceInstructions}
 
@@ -152,8 +224,8 @@ export const generateExercises = async (options: ExerciseOptions, modelName: str
         [{
            "title": "Exercice [N]",
            "enonce": "Markdown riche (LaTeX, listes, gras)...",
-           "corrige": "Correction détaillée pas à pas avec barème...",
-           "illustrationSVG": "<svg>...</svg> (Uniquement si nécessaire pour un circuit ou schéma mécanique)"
+           "corrige": ${options.includeCorrigé ? '"Correction détaillée pas à pas avec barème..."' : '""'},
+           "illustrationSVG": ${options.includeIllustrations ? '"<svg>...</svg>"' : 'null'}
         }]
       `;
   }

@@ -6,9 +6,8 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
-// --- UTILS ---
-
 const isArabicText = (text: string): boolean => {
+
     const arabicPattern = /[\u0600-\u06FF]/;
     return arabicPattern.test(text);
 };
@@ -69,7 +68,8 @@ const SafeSVGDisplay: React.FC<{ content: string }> = ({ content }) => {
         let clean = text.replace(/_\{([0-9]+)\}/g, (m, d) => d.split('').map((c: string) => '₀₁₂₃₄₅₆₇₈₉'[parseInt(c)]).join('')).replace(/\^\{([0-9]+)\}/g, (m, d) => d.split('').map((c: string) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[parseInt(c)]).join('')).replace(/_\{([^}]+)\}/g, '$1').replace(/\^\{([^}]+)\}/g, '$1').replace(/\{([^}]+)\}/g, '$1');
         return `>${clean}<`;
     });
-    const fullSvg = `<svg ${rootAttributes} width="100%" height="auto" style="display: block; margin: auto; max-height: 500px; width: 100%; overflow: visible;">${innerContent}</svg>`;
+    const fullSvg = `<svg ${rootAttributes} width="100%" height="100%" style="display: block; margin: auto; max-height: 500px; width: 100%; overflow: visible;">${innerContent}</svg>`;
+
 
     return <figure className="my-8 flex justify-center items-center p-4 bg-white border border-slate-100 rounded-lg shadow-sm print:shadow-none print:border-none select-none overflow-hidden"><div className="w-full max-w-2xl svg-container" dangerouslySetInnerHTML={{ __html: fullSvg }} /></figure>;
 };

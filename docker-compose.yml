@@ -1,7 +1,6 @@
 
-version: '3.8'
-
 services:
+
   # Service Backend (Node.js/Express)
   backend:
     build:
@@ -20,12 +19,19 @@ services:
       - REDIS_ENABLED=true
       - MONGODB_URI=mongodb://mongodb:27017/profiV
       - MONGODB_ENABLED=true
+      - SQLITE_DB_PATH=/data/profiv.db
+      - SQLITE_ENABLED=true
       - MONITORING_ENABLED=true
       - LOG_LEVEL=info
+      - LITESTREAM_ENABLED=true
     depends_on:
       - redis
       - mongodb
+      - litestream
+    volumes:
+      - sqlite-data:/data
     restart: unless-stopped
+
     networks:
       - profiV-network
     healthcheck:
@@ -70,7 +76,30 @@ services:
       timeout: 10s
       retries: 3
 
+  # Service Litestream (SQLite Backup)
+  litestream:
+    image: litestream/litestream:0.3.13
+    volumes:
+      - sqlite-data:/data
+      - ./litestream.yml:/etc/litestream.yml
+      - ./backups:/backups
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+    command: replicate -config /etc/litestream.yml
+    restart: unless-stopped
+    networks:
+      - profiV-network
+    healthcheck:
+
+      test: ["CMD", "litestream", "replicate", "-config", "/etc/litestream.yml", "-exec", "echo 'healthy'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Service Frontend (Vite/React)
+
   frontend:
     build:
       context: .
@@ -90,6 +119,9 @@ services:
 volumes:
   redis-data:
   mongodb-data:
+  sqlite-data:
+  litestream-backups:
+
 
 networks:
   profiV-network:

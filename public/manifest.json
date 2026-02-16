@@ -1,4 +1,3 @@
-
 {
   "name": "ProfiV - Excellence Éducative",
   "short_name": "ProfiV",
@@ -10,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "type": "image/png",
+      "src": "/icon-192.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
     },
     {
-      "src": "/icon-512.png",
-      "type": "image/png",
+      "src": "/icon-512.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512"
     }
   ],
@@ -30,21 +29,21 @@
       "short_name": "Exercices",
       "description": "Générer de nouveaux exercices",
       "url": "/?action=generate",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
     },
     {
       "name": "Quiz Diagnostic",
       "short_name": "Quiz",
       "description": "Passer un quiz diagnostic",
       "url": "/?action=quiz",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
     },
     {
       "name": "Historique",
       "short_name": "Historique",
-      "description": "Voir l\'historique des exercices",
+      "description": "Voir l'historique des exercices",
       "url": "/?action=history",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
     }
   ]
 }

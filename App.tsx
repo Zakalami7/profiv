@@ -1,11 +1,12 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
-import { ControlPanel } from './components/ControlPanel';
-import { ExerciseDisplay } from './components/ExerciseDisplay';
+import { SelectionPanel, ConfigPanel, ExamPreview } from './components/wireframes';
 
 import { Footer } from './components/Footer';
+
 import { PricingModal } from './components/PricingModal';
+
 import { AdminLogin } from './components/AdminLogin';
 import { AdminDashboard } from './components/AdminDashboard';
 import type { Exercise, ExerciseOptions, UserState, PlanType, SystemConfig, ExamEvent, HistoryItem, CycleType } from './types';
@@ -23,6 +24,7 @@ import { getCurriculum } from './services/curriculumService';
 import { PlanningModal } from './components/PlanningModal';
 import { HistoryView } from './components/HistoryView';
 import { getUserHistory, addToHistory, removeFromHistory } from './services/historyService';
+import { initializeBrowserModule } from './database/query-builder';
 
 // Helper pour le localStorage
 const loadState = <T,>(key: string, fallback: T): T => {
@@ -99,7 +101,10 @@ const App: React.FC = () => {
   // --- INIT ---
 
   useEffect(() => {
-    getCurriculum().then(() => console.log("Curriculum chargé"));
+    // Initialize browser module first to prevent async loading errors
+    initializeBrowserModule().then(() => {
+      getCurriculum().then(() => console.log("Curriculum chargé"));
+    });
 
     // 1. Vérification Mode Démo Local (Contournement Email)
     const localDemo = localStorage.getItem('profi_demo_session');
@@ -216,14 +221,17 @@ const App: React.FC = () => {
             }
         }
 
+        const newRole = (profile.plan as string || '').includes('STUDENT') ? 'STUDENT' : 'TEACHER';
+
         setUserState(prev => ({
             ...prev,
             plan: profile.plan as PlanType,
+            role: newRole,
             dailyCredits: currentCredits,
             maxDailyCredits: maxCredits,
             lastRefillDate: today,
             preferredCycle: preferredCycle,
-            features: PLAN_FEATURES[profile.plan as PlanType]
+            features: PLAN_FEATURES[profile.plan as PlanType] || PLAN_FEATURES['TEACHER_FREE']
         }));
 
         // 3. SYNCHRONISATION HISTORIQUE CLOUD
@@ -380,7 +388,8 @@ const App: React.FC = () => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `DS_Profi_${options.subject}_${new Date().toISOString().slice(0,10)}.docx`;
+          a.download = `DS_NajahIA_${options.subject}_${new Date().toISOString().slice(0,10)}.docx`;
+
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -597,19 +606,26 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* SIDEBAR : Masquée en mode étudiant */}
                     {!isStudentView && (
-                        <div id="sidebar-panel" className="lg:col-span-6 xl:col-span-5 relative print:hidden">
-                            <ControlPanel
+                        <div id="sidebar-panel" className="lg:col-span-6 xl:col-span-5 relative print:hidden space-y-6">
+                            {/* Selection Panel - Configuration hiérarchique */}
+                            <SelectionPanel
+                                options={options}
+                                setOptions={setOptions}
+                                userCycle={userState.preferredCycle}
+                                isTeacher={userState.role === 'TEACHER'}
+                            />
+                            
+                            {/* Config Panel - Paramètres avancés */}
+                            <ConfigPanel
                                 options={options}
                                 setOptions={setOptions}
                                 onGenerate={handleGenerate}
                                 isLoading={isLoading}
-                                userPlan={userState.plan}
-                                userCycle={userState.preferredCycle} // Passage du cycle préféré
-                                onOpenPricing={() => setIsPricingOpen(true)}
-                                userFeatures={userState.features}
+                                isFreeUser={userState.plan === 'TEACHER_FREE' || userState.plan === 'STUDENT_FREE'}
                             />
                         </div>
                     )}
+
 
                     <div id="content-panel" className={`${isStudentView ? 'lg:col-span-12 max-w-4xl mx-auto' : 'lg:col-span-6 xl:col-span-7'} print:w-full print:col-span-12`}>
                     {isLoading ? <Loader /> : (exercises && (
@@ -689,15 +705,20 @@ const App: React.FC = () => {
                                             <p className="text-xs text-slate-500">Partagez ce code avec vos élèves.</p>
                                         </div>
                                         <div className="bg-white p-2 rounded-lg shadow-sm">
-                                            <img src={`https://quickchart.io/chart?cht=qr&chs=100x100&chl=${encodeURIComponent(`https://profi.ma/join/${assignmentCode}`)}`} alt="QR" className="w-16 h-16" />
+                                            <img src={`https://quickchart.io/chart?cht=qr&chs=100x100&chl=${encodeURIComponent(`https://najah-ia.ma/join/${assignmentCode}`)}`} alt="QR" className="w-16 h-16" />
+
                                         </div>
                                     </div>
                                 )}
 
-                                {/* EXERCICES (Mode Etudiant Activé => Pas de corrigé) */}
-                                {exercises.map((ex, i) => (
-                                    <ExerciseDisplay key={ex.id || i} exercise={ex} index={i} options={options} isStudentMode={isStudentView} />
-                                ))}
+                                {/* EXERCICES - Nouveau ExamPreview Wireframe */}
+                                <ExamPreview 
+                                    exercises={exercises} 
+                                    options={options}
+                                    isLoading={isLoading}
+                                    scale={0.85}
+                                />
+
 
                                 {/* BOUTON DE VALIDATION ETUDIANT */}
                                 {isStudentView && !isAssignmentCompleted && (

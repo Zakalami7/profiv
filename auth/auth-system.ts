@@ -64,13 +64,13 @@ const generateTokens = (userId: string): { accessToken: string; refreshToken: st
     const accessToken = jwt.sign(
         { sub: userId, type: 'access' },
         AUTH_CONFIG.jwtSecret,
-        { expiresIn: AUTH_CONFIG.jwtExpiresIn }
+        { expiresIn: AUTH_CONFIG.jwtExpiresIn } as jwt.SignOptions
     );
     
     const refreshToken = jwt.sign(
         { sub: userId, type: 'refresh' },
         AUTH_CONFIG.jwtSecret,
-        { expiresIn: AUTH_CONFIG.refreshTokenExpiresIn }
+        { expiresIn: AUTH_CONFIG.refreshTokenExpiresIn } as jwt.SignOptions
     );
     
     return { accessToken, refreshToken, expiresAt };

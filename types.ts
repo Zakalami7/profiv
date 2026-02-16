@@ -24,6 +24,11 @@ export interface ExerciseOptions {
   schoolName: string;
   includeOfficialHeader: boolean;
   exerciseCount: number; // Total des exercices
+  // New options for exercise generation
+  includeCorrigé: boolean; // Inclure le corrigé
+  includeResponseElements: boolean; // Éléments de réponse détaillés
+  includeIllustrations: boolean; // 🖼️ Schémas et figures si pertinent
+  includeMinistryHeader: boolean; // 🏛️ Format Ministère de l'Éducation
 }
 
 export interface Exercise {
@@ -43,7 +48,7 @@ export interface HistoryItem {
 }
 
 // Types pour la monétisation
-export type PlanType = 'TEACHER_FREE' | 'TEACHER_PRO' | 'STUDENT_FREE' | 'STUDENT_PASS_24H' | 'STUDENT_PACK_BAC';
+export type PlanType = 'TEACHER_FREE' | 'TEACHER_PRO' | 'STUDENT_FREE' | 'STUDENT_PRO' | 'STUDENT_PASS_24H' | 'STUDENT_PACK_BAC';
 export type CycleType = 'PRIMAIRE' | 'COLLEGE' | 'LYCEE';
 export type UserRole = 'TEACHER' | 'STUDENT';
 

@@ -30,13 +30,15 @@ interface ExerciceCardProps {
   isDragging?: boolean;
   showCorrection?: boolean;
   onToggleCorrection?: () => void;
-  onDragStart?: (e: React.DragEvent) => void;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragEnd?: () => void;
   onCopy?: (content: string) => void;
   onExportPDF?: () => void;
   onExportWord?: () => void;
   className?: string;
 }
+
+
 
 const ExerciceCard: React.FC<ExerciceCardProps> = ({
   exercise,
@@ -63,16 +65,20 @@ const ExerciceCard: React.FC<ExerciceCardProps> = ({
   };
 
   return (
+    <div
+      draggable={true}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`${className} ${isDragging ? 'opacity-50' : ''}`}
+    >
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 ${className} ${isDragging ? 'opacity-50' : ''}`}
-      draggable={true}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
     >
+
       {/* Header de la carte */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -200,7 +206,9 @@ const ExerciceCard: React.FC<ExerciceCardProps> = ({
         )}
       </AnimatePresence>
     </motion.div>
+    </div>
   );
 };
+
 
 export default ExerciceCard;

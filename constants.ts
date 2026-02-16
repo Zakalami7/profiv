@@ -291,7 +291,6 @@ const LANGUAGES_TYPES = [
     "Compréhension de texte",
     "Expression écrite / Production",
     "Exercice de Grammaire / Conjugaison",
-    "Question à choix multiple (QCM)",
     "Analyse littéraire",
     "Remédiation (TaRL - Dictée/Lecture)",
     "Traduction / Version (Anglais)"
@@ -446,3 +445,19 @@ export const PLAN_FEATURES = {
         canAccessDetailedCorrections: true
     }
 };
+
+// --- UI FEATURE FLAGS ---
+// Controls which UI components are rendered (Ministry theme vs Standard)
+export const UI_THEME = (
+  import.meta.env.VITE_UI_THEME || 
+  process.env.UI_THEME || 
+  'standard'
+) as 'standard' | 'ministry';
+
+// Feature flag to enable/disable Ministry integration features
+export const ENABLE_MINISTRY_FEATURES = import.meta.env.VITE_ENABLE_MINISTRY === 'true' || false;
+
+// Log which theme is active (for debugging)
+if (typeof window !== 'undefined') {
+  console.log(`[ProfiV] Active UI Theme: ${UI_THEME}`);
+}

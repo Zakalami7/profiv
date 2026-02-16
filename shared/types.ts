@@ -10,8 +10,10 @@ import { z } from 'zod';
 export const ExerciseSchema = z.object({
   id: z.string().optional(),
   title: z.string().optional(),
-  enonce: z.string().min(10, 'L'énoncé doit contenir au moins 10 caractères'),
-  corrige: z.string().min(10, 'La correction doit contenir au moins 10 caractères'),
+  enonce: z.string().min(10, "L'énoncé doit contenir au moins 10 caractères"),
+
+  corrige: z.string().min(10, "La correction doit contenir au moins 10 caractères"),
+
   illustrationSVG: z.string().optional()
 });
 
